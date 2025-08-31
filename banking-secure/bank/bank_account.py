@@ -1,33 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 """
-TR — Güvenlik ve Eşzamanlılık (NIST/OWASP) + Kritik Bölge Tanımı:
-- Kritik Bölge (Critical Section): Programın, paylaşılan değişken/kaynak üzerinde atomik olması gereken
-  kısmıdır; aynı anda yalnız bir iş parçası/proses tarafından yürütülmelidir (mutual exclusion).
-  (ISO/IEC/IEEE 24765 — Systems & Software Engineering Vocabulary; genel tanım için bkz. OS literatürü)
-- NIST SP 800-160 bağlamı: Paylaşılan kaynaklara deterministik erişim; yarış koşullarını tasarımla azalt.
-- OWASP (Race Conditions/ASVS): Kritik bölgeleri kilitle, atomiklik ve bütünlüğü sağla; deadlock’u önlemek
-  için kanonik kilit sırası uygula.
+Bank Account - Lock-Based Approach (Method A)
 
-EN — Security & Concurrency (NIST/OWASP) + Critical Section:
-- Critical Section: The portion of code that accesses shared mutable state and must not be executed by more
-  than one thread/process at the same time (mutual exclusion). (ISO/IEC/IEEE 24765 vocabulary; see OS texts)
-- NIST SP 800-160: Deterministic control over shared resources; design out race conditions.
-- OWASP (Race Conditions/ASVS): Lock critical sections; preserve atomicity/integrity; use canonical lock
-  ordering to avoid deadlocks.
+Assignment Goal: This class directly fulfills the `BankAccount` and `Thread-Safety`
+requirements. It demonstrates a classic approach to concurrency control.
 
-Bu sınıf, hesap başına RLock ve transferlerde KANONİK KİLİT SIRASI (account_number) uygular.
-GIL sebebiyle saf CPU-yoğun Python bytecode’unda gerçek çok çekirdekli paralellik beklemeyin; burada
-gösterilen şey eşzamanlılık (işlerin örtüşmesi) ve bütünlük garantileridir.
+- OWASP (Race Conditions): We protect the "critical section" (where the shared
+  `_balance` is modified) using an `RLock`. This ensures that only one thread
+  can modify the balance at a time, guaranteeing atomicity.
+- OWASP (Deadlocks): For the `transfer_to` method, we implement a canonical
+  lock ordering strategy. By always acquiring locks in a deterministic order
+  (based on account_number), we provably prevent deadlocks.
 """
-
 from decimal import Decimal
 from threading import RLock
 import time
-import bank.config as cfg  # dinamik gecikmeyi runtime'da okuyabilmek için
-
-class InsufficientFunds(Exception):
-    pass
+import bank.config as cfg
+from .errors import InsufficientFunds, InvalidAmount
 
 class BankAccount:
     def __init__(self, account_number: str, balance: Decimal):
@@ -35,51 +25,39 @@ class BankAccount:
         self._balance = Decimal(balance)
         self._lock = RLock()
 
-    # TR: Kritik bölge — atomiklik & bütünlük (OWASP). RLock ile yarış koşulları önlenir (NIST).
-    # EN: Critical section — atomicity & integrity (OWASP). RLock prevents races (NIST).
-    def deposit(self, amount: Decimal) -> None:
-        amount = Decimal(amount)
-        if amount <= 0:
-            raise ValueError("Amount must be positive")
-        with self._lock:
-            if cfg.CRIT_DELAY_SEC:
-                time.sleep(cfg.CRIT_DELAY_SEC)
-            self._balance += amount
-
-    # TR: Kritik bölge — negatif bakiye kontrolü + atomik güncelleme.
-    # EN: Critical section — insufficient-funds check + atomic update.
-    def withdraw(self, amount: Decimal) -> None:
-        amount = Decimal(amount)
-        if amount <= 0:
-            raise ValueError("Amount must be positive")
-        with self._lock:
-            if self._balance < amount:
-                raise InsufficientFunds("insufficient funds")
-            if cfg.CRIT_DELAY_SEC:
-                time.sleep(cfg.CRIT_DELAY_SEC)
-            self._balance -= amount
-
     def get_balance(self) -> Decimal:
         with self._lock:
             return Decimal(self._balance)
 
-    # TR: DEADLOCK ÖNLEME — KANONİK SIRA (OWASP/NIST)
-    # EN: DEADLOCK AVOIDANCE — CANONICAL ORDER (OWASP/NIST)
-    def transfer_to(self, other: "BankAccount", amount: Decimal) -> None:
-        if self is other:
-            raise ValueError("cannot transfer to the same account")
+    def deposit(self, amount: Decimal) -> None:
         amount = Decimal(amount)
-        if amount <= 0:
-            raise ValueError("Amount must be positive")
+        if amount <= 0: raise InvalidAmount("Amount must be positive")
+        with self._lock: # Start of critical section
+            if cfg.CRIT_DELAY_SEC > 0: time.sleep(cfg.CRIT_DELAY_SEC)
+            self._balance += amount
 
-        first, second = (self, other) if self.account_number < other.account_number else (other, self)
-        with first._lock:
-            with second._lock:
+    def withdraw(self, amount: Decimal) -> None:
+        amount = Decimal(amount)
+        if amount <= 0: raise InvalidAmount("Amount must be positive")
+        with self._lock: # Start of critical section
+            if self._balance < amount:
+                raise InsufficientFunds("Insufficient funds")
+            if cfg.CRIT_DELAY_SEC > 0: time.sleep(cfg.CRIT_DELAY_SEC)
+            self._balance -= amount
+
+    def transfer_to(self, other: "BankAccount", amount: Decimal) -> None:
+        amount = Decimal(amount)
+        if self is other: raise ValueError("Cannot transfer to the same account")
+        if amount <= 0: raise InvalidAmount("Amount must be positive")
+
+        # DEADLOCK AVOIDANCE STRATEGY (per OWASP guidelines)
+        lock1, lock2 = (self._lock, other._lock) if self.account_number < other.account_number else (other._lock, self._lock)
+        
+        with lock1:
+            with lock2:
+                # This block is atomic and safe once both locks are held.
                 if self._balance < amount:
-                    raise InsufficientFunds("insufficient funds")
-                # Kritik bölgeyi büyütmek için isteğe bağlı gecikme
-                # Optional delay to enlarge the critical region
-                if cfg.CRIT_DELAY_SEC:
-                    time.sleep(cfg.CRIT_DELAY_SEC)
+                    raise InsufficientFunds("Insufficient funds for transfer")
+                if cfg.CRIT_DELAY_SEC > 0: time.sleep(cfg.CRIT_DELAY_SEC)
                 self._balance -= amount
                 other._balance += amount
