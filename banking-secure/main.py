@@ -138,7 +138,7 @@ def main():
 
     while True:
         print("\n=== Main Menu ===")
-        print("1) Run Assignment Scenarios (Recommended)")
+        print("1) Run Assignment Scenarios")
         print("2) Delay Settings")
         print("0) Quit")
         sel = input("Choice: ").strip()
