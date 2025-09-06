@@ -1,11 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Central Configuration File.
-
-Philosophy: This file follows the "Single Source of Truth" (SSOT) principle.
-All business rules (e.g., currency, transaction limits) and simulation
-parameters are centralized here. This improves maintainability and security, as
-critical values are managed in one predictable location.
+Central Configuration File (SSOT).
 """
 
 # --- Business Rules ---
@@ -20,9 +14,10 @@ MIN_TRANSACTION = "0.01"
 MAX_TRANSACTION = "1000000.00"
 
 # --- Simulation Settings ---
-# This artificial delay is a pedagogical tool. It enlarges the critical section
-# to make the effects of contention more visible and measurable.
-CRIT_DELAY_SEC: float = 0.001
+CRIT_DELAY_SEC: float = 0.001  # pedagogical critical-section delay
 
-# A simple warning threshold for creating a large number of actor threads.
+# Actor warnings / timeouts
 ACTOR_THREAD_WARN_THRESHOLD: int = 300
+ACTOR_CALL_TIMEOUT_SEC: float = 5.0  # to avoid hanging calls
+
+

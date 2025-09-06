@@ -1,0 +1,9 @@
+timestamp,scenario,method,num_accounts,users,ops_per_user,attempted,succeeded,failed,failed_insufficient,failed_invalid,failed_same_account,failed_other,ops_per_sec,avg_latency_ms,p95_latency_ms,total_drift,currency,crit_delay_ms,transfer_only
+2025-09-06T15:52:27Z,Race Condition Test: Single Account Stress,Method A — Lock/RLock (Pessimistic Locking),1,16,20000,320000,319602,398,398,0,0,0,922.3545703958035,17.079,82.286,-821.01,GBP,1.0,False
+2025-09-06T15:58:13Z,Race Condition Test: Single Account Stress,Method B — Actor/Queue (Message-Passing),1,16,20000,320000,319844,156,156,0,0,0,926.7829643692801,17.257,17.452,10602.38,GBP,1.0,False
+2025-09-06T16:20:48Z,Race Condition Test: Single Account Stress,Method A — Lock/RLock (Pessimistic Locking),1,16,20000,320000,320000,0,0,0,0,0,921.5416727496647,16.926,82.424,25796.74,GBP,1.0,False
+2025-09-06T16:26:33Z,Race Condition Test: Single Account Stress,Method B — Actor/Queue (Message-Passing),1,16,20000,320000,320000,0,0,0,0,0,926.2474509552757,17.267,17.449,12730.99,GBP,1.0,False
+2025-09-06T16:32:57Z,Hot-Spot: Intensive Transfers Between Two Accounts,Method A — Lock/RLock (Pessimistic Locking),2,16,20000,320000,316220,3780,3780,0,0,0,920.5292135764294,17.287,34.029,0.00,GBP,1.0,True
+2025-09-06T16:38:38Z,Hot-Spot: Intensive Transfers Between Two Accounts,Method B — Actor/Queue (Message-Passing),2,16,20000,320000,315648,4352,4352,0,0,0,938.6170185179705,17.027,20.38,0.00,GBP,1.0,True
+2025-09-06T16:49:27Z,Scalability Test: System Throughput Across Many Accounts,Method A — Lock/RLock (Pessimistic Locking),50,64,5000,320000,312650,7350,7350,0,0,0,8518.724172755801,7.327,31.144,0.00,GBP,1.0,True
+2025-09-06T16:50:12Z,Scalability Test: System Throughput Across Many Accounts,Method B — Actor/Queue (Message-Passing),50,64,5000,320000,312626,7374,7374,0,0,0,7059.630709211272,8.998,16.949,0.00,GBP,1.0,True

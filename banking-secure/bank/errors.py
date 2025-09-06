@@ -1,17 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Custom Exception Classes.
+Custom Exception Classes for Banking Domain.
 
-Philosophy: Defining specific exceptions makes a program's behavior more
-predictable and secure. Instead of raising a generic error, custom types like
-`InsufficientFunds` allow calling code to handle specific business rule
-failures gracefully and correctly.
+Purpose:
+- Provide clear, domain-specific errors for banking operations.
+- Enable calling code (tests, simulators, CLI) to handle business rule
+  violations gracefully, instead of catching generic Exception.
+- Following secure coding best practices, explicit exceptions reduce ambiguity
+  and improve system robustness.
 """
 
+
 class InsufficientFunds(Exception):
-    """Raised when an operation cannot be completed due to lack of funds."""
+    """
+    Raised when a withdrawal or transfer cannot be completed because
+    the account balance is insufficient.
+    """
     pass
 
+
 class InvalidAmount(Exception):
-    """Raised for invalid transaction amounts (e.g., negative or zero)."""
+    """
+    Raised when a transaction amount is invalid:
+    - Negative or zero value.
+    - Outside the configured business rules (min/max transaction limits).
+    """
     pass
